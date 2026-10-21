@@ -36,9 +36,27 @@ let bag=[],recent=[],voice=null;
 const grid=document.getElementById("grid"),status=document.getElementById("status");
 function refill(){bag=words.map((_,i)=>i).filter(i=>!recent.includes(i));for(let i=bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]];}}
 function draw(){if(bag.length<4)refill();grid.replaceChildren();for(let n=0;n<4;n++){const index=bag.pop(),[word,emoji]=words[index];recent.push(index);if(recent.length>16)recent.shift();const button=document.createElement("button");button.className="tile";button.type="button";button.setAttribute("aria-label",word);const art=document.createElement("span");art.className="art";art.textContent=emoji;art.setAttribute("aria-hidden","true");button.append(art);button.addEventListener("click",()=>speak(word,button));grid.append(button);}}
-function chooseVoice(){if(!("speechSynthesis" in window))return;const voices=speechSynthesis.getVoices().filter(v=>/^en[-_]/i.test(v.lang));voice=voices.find(v=>/Samantha|Karen|Daniel|Serena|Ava/i.test(v.name))||voices.find(v=>v.localService)||voices[0]||null;}
-function speak(word,button){if(!("speechSynthesis" in window)){status.textContent="Speech is not supported in this browser.";return;}speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(word);utterance.lang="en-US";utterance.rate=.82;utterance.pitch=1.06;if(voice)utterance.voice=voice;button.classList.remove("speaking");void button.offsetWidth;button.classList.add("speaking");utterance.onend=()=>button.classList.remove("speaking");utterance.onerror=()=>{status.textContent="Please check that your phone is not muted and try again.";button.classList.remove("speaking");};status.textContent="";speechSynthesis.speak(utterance);}
-document.getElementById("next").addEventListener("click",()=>{if("speechSynthesis" in window)speechSynthesis.cancel();draw();});
+function chooseVoice(){if(!("speechSynthesis" in window))return;const voices=window.speechSynthesis.getVoices().filter(v=>/^en[-_]/i.test(v.lang));voice=voices.find(v=>v.lang==="en-US"&&v.localService)||voices.find(v=>v.localService)||voices[0]||null;}
+let activeUtterance=null;
+function speak(word,button){
+ if(!("speechSynthesis" in window)){status.textContent="Speech is not supported in this browser.";return;}
+ const synth=window.speechSynthesis;
+ try{
+  if(synth.speaking||synth.pending)synth.cancel();
+  synth.resume();
+  const utterance=new SpeechSynthesisUtterance(word);
+  utterance.lang="en-US";utterance.rate=.82;utterance.pitch=1.06;
+  chooseVoice();if(voice)utterance.voice=voice;
+  activeUtterance=utterance;
+  button.classList.remove("speaking");void button.offsetWidth;button.classList.add("speaking");
+  const finish=()=>{button.classList.remove("speaking");if(activeUtterance===utterance)activeUtterance=null;};
+  utterance.onend=finish;
+  utterance.onerror=e=>{finish();status.textContent="Sound unavailable. Tap the picture again.";};
+  status.textContent="";
+  synth.speak(utterance);
+ }catch(e){button.classList.remove("speaking");status.textContent="Sound unavailable. Tap the picture again.";}
+}
+document.getElementById("next").addEventListener("click",()=>{if("speechSynthesis" in window&&speechSynthesis.speaking)speechSynthesis.cancel();activeUtterance=null;draw();});
 if("speechSynthesis" in window){chooseVoice();speechSynthesis.addEventListener?.("voiceschanged",chooseVoice);}
 draw();
 </script></body></html>
