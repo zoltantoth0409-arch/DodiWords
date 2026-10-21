@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#fff6e9"><meta name="apple-mobile-web-app-capable" content="yes">
-<title>DodiWords — Little words, big wonders</title>
+<title>DodiWords — Storybook edition</title>
 <style>
 :root{font-family:ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif;color:#55483d;background:#fff6e9}
 *{box-sizing:border-box}body{margin:0;min-height:100dvh;background:radial-gradient(circle at 20% 5%,#ffe7df,transparent 40%),radial-gradient(circle at 85% 90%,#e1f2df,transparent 45%),#fff6e9}
@@ -45,10 +45,10 @@ const illustrations = {
 };
 function artwork(word){const shapes=illustrations[word];if(!shapes)return null;const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.setAttribute("viewBox","0 0 206 206");svg.setAttribute("aria-hidden","true");svg.classList.add("illustration");svg.innerHTML=shapes;return svg;}
 
-let bag=[],recent=[],voice=null;
+let bag=[],recent=[],voice=null,firstDraw=true;
 const grid=document.getElementById("grid"),status=document.getElementById("status");
 function refill(){bag=words.map((_,i)=>i).filter(i=>!recent.includes(i));for(let i=bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]];}}
-function draw(){if(bag.length<4)refill();grid.replaceChildren();for(let n=0;n<4;n++){const index=bag.pop(),[word,emoji]=words[index];recent.push(index);if(recent.length>16)recent.shift();const button=document.createElement("button");button.className="tile";button.type="button";button.setAttribute("aria-label",word);const art=document.createElement("span");art.className="art";art.textContent=emoji;art.setAttribute("aria-hidden","true");const picture=artwork(word);if(picture){button.append(picture);}else{button.append(art);}button.addEventListener("click",()=>speak(word,button));grid.append(button);}}
+function draw(){if(firstDraw){firstDraw=false;bag=words.map((_,i)=>i).filter(i=>!["Elephant","Fox","Dog","Apple"].includes(words[i][0]));for(let i=bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]];}bag.push(...["Apple","Dog","Fox","Elephant"].map(w=>words.findIndex(item=>item[0]===w)));}if(bag.length<4)refill();grid.replaceChildren();for(let n=0;n<4;n++){const index=bag.pop(),[word,emoji]=words[index];recent.push(index);if(recent.length>16)recent.shift();const button=document.createElement("button");button.className="tile";button.type="button";button.setAttribute("aria-label",word);const art=document.createElement("span");art.className="art";art.textContent=emoji;art.setAttribute("aria-hidden","true");const picture=artwork(word);if(picture){button.append(picture);}else{button.append(art);}button.addEventListener("click",()=>speak(word,button));grid.append(button);}}
 function chooseVoice(){if(!("speechSynthesis" in window))return;const voices=speechSynthesis.getVoices().filter(v=>/^en[-_]/i.test(v.lang));voice=voices.find(v=>/Samantha|Karen|Daniel|Serena|Ava/i.test(v.name))||voices.find(v=>v.localService)||voices[0]||null;}
 function speak(word,button){if(!("speechSynthesis" in window)){status.textContent="Speech is not supported in this browser.";return;}speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(word);utterance.lang="en-US";utterance.rate=.82;utterance.pitch=1.06;if(voice)utterance.voice=voice;button.classList.remove("speaking");void button.offsetWidth;button.classList.add("speaking");utterance.onend=()=>button.classList.remove("speaking");utterance.onerror=()=>{status.textContent="Please check that your phone is not muted and try again.";button.classList.remove("speaking");};status.textContent="";speechSynthesis.speak(utterance);}
 document.getElementById("next").addEventListener("click",()=>{if("speechSynthesis" in window)speechSynthesis.cancel();draw();});
