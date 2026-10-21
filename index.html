@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fff6e9"><meta name="apple-mobile-web-app-capable" content="yes">
+<title>DodiWords — Little words, big wonders</title>
+<style>
+:root{font-family:ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif;color:#55483d;background:#fff6e9}
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;background:radial-gradient(circle at 20% 5%,#ffe7df,transparent 40%),radial-gradient(circle at 85% 90%,#e1f2df,transparent 45%),#fff6e9}
+main{max-width:740px;margin:auto;padding:24px 18px 48px}header{text-align:center;margin:10px 0 26px}h1{font-size:clamp(2.2rem,9vw,3.6rem);margin:0;color:#e17c70;letter-spacing:-2px}header p{margin:4px;color:#89766b;font-size:1rem}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.tile{border:0;border-radius:28px;aspect-ratio:1/1;box-shadow:0 7px 0 #0000000b,0 14px 26px #7d695519;background:#fff;display:grid;place-items:center;cursor:pointer;position:relative;overflow:hidden;touch-action:manipulation;transition:transform .15s}
+.tile:active{transform:scale(.94)}.tile:focus-visible,.next:focus-visible{outline:4px solid #dc877a;outline-offset:3px}
+.tile .art{font-size:clamp(4.3rem,18vw,8rem);filter:drop-shadow(0 9px 5px #00000013);line-height:1;user-select:none}
+.tile.speaking{animation:bounce .32s ease-in-out}.tile:nth-child(4n+1){background:#fce6d9}.tile:nth-child(4n+2){background:#e3f0df}.tile:nth-child(4n+3){background:#e4ebfa}.tile:nth-child(4n){background:#fff0bd}
+@keyframes bounce{50%{transform:scale(1.045)}}
+.controls{text-align:center;margin:26px 0}.next{font:inherit;border:0;background:#e17c70;color:white;border-radius:999px;padding:16px 34px;font-size:1.2rem;font-weight:800;box-shadow:0 6px 0 #bf6057;cursor:pointer}.next:active{transform:translateY(4px);box-shadow:0 2px 0 #bf6057}
+.hint{text-align:center;color:#998579;font-size:.85rem;margin:20px 0}.status{min-height:1.4em;text-align:center;color:#9a6d64;font-size:.9rem}
+@media(max-width:360px){.grid{gap:10px}.tile{border-radius:20px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body><main><header><h1>☀️ DodiWords</h1><p>Little words, big wonders ✨</p></header>
+<section class="grid" id="grid" aria-label="Picture cards"></section>
+<div class="controls"><button class="next" id="next" type="button">More pictures →</button></div>
+<p class="status" id="status" role="status" aria-live="polite"></p>
+<p class="hint">Tap a picture to hear its English name ♡</p></main>
+<script>
+"use strict";
+// A small, hand-checked vocabulary: each illustration maps to exactly one spoken word.
+// Replace emoji with licensed, optimized storybook artwork in a later asset pass.
+const words=[
+["Cat","🐱"],["Dog","🐶"],["Elephant","🐘"],["Lion","🦁"],["Tiger","🐯"],["Bear","🐻"],["Rabbit","🐰"],["Fox","🦊"],["Panda","🐼"],["Monkey","🐵"],["Giraffe","🦒"],["Zebra","🦓"],["Horse","🐴"],["Cow","🐮"],["Pig","🐷"],["Sheep","🐑"],["Duck","🦆"],["Chicken","🐔"],["Penguin","🐧"],["Owl","🦉"],["Butterfly","🦋"],["Bee","🐝"],["Frog","🐸"],["Turtle","🐢"],["Fish","🐟"],["Whale","🐳"],["Dolphin","🐬"],["Octopus","🐙"],["Crab","🦀"],["Snail","🐌"],["Apple","🍎"],["Banana","🍌"],["Strawberry","🍓"],["Cherry","🍒"],["Pear","🍐"],["Peach","🍑"],["Watermelon","🍉"],["Pineapple","🍍"],["Carrot","🥕"],["Corn","🌽"],["Broccoli","🥦"],["Bread","🍞"],["Cheese","🧀"],["Cake","🎂"],["Cookie","🍪"],["Ice cream","🍦"],["Ball","⚽"],["Teddy bear","🧸"],["Balloon","🎈"],["Kite","🪁"],["Car","🚗"],["Bus","🚌"],["Train","🚂"],["Airplane","✈️"],["Bicycle","🚲"],["Boat","⛵"],["Rocket","🚀"],["House","🏠"],["Tree","🌳"],["Flower","🌻"],["Sun","☀️"],["Moon","🌙"],["Star","⭐"],["Rainbow","🌈"],["Cloud","☁️"],["Snowman","⛄"],["Umbrella","☂️"],["Book","📖"],["Pencil","✏️"],["Clock","⏰"],["Key","🔑"],["Hat","🎩"],["Shoe","👟"],["Sock","🧦"],["Chair","🪑"],["Bed","🛏️"],["Cup","🥤"],["Spoon","🥄"],["Toothbrush","🪥"],["Drum","🥁"],["Guitar","🎸"],["Bell","🔔"],["Heart","❤️"],["Gift","🎁"],["Crown","👑"],["Robot","🤖"],["Dinosaur","🦕"],["Ladybug","🐞"],["Ant","🐜"],["Mouse","🐭"],["Squirrel","🐿️"],["Koala","🐨"],["Camel","🐪"],["Hedgehog","🦔"],["Flamingo","🦩"],["Parrot","🦜"],["Crocodile","🐊"],["Seal","🦭"]
+];
+let bag=[],recent=[],voice=null;
+const grid=document.getElementById("grid"),status=document.getElementById("status");
+function refill(){bag=words.map((_,i)=>i).filter(i=>!recent.includes(i));for(let i=bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]];}}
+function draw(){if(bag.length<4)refill();grid.replaceChildren();for(let n=0;n<4;n++){const index=bag.pop(),[word,emoji]=words[index];recent.push(index);if(recent.length>16)recent.shift();const button=document.createElement("button");button.className="tile";button.type="button";button.setAttribute("aria-label",word);const art=document.createElement("span");art.className="art";art.textContent=emoji;art.setAttribute("aria-hidden","true");button.append(art);button.addEventListener("click",()=>speak(word,button));grid.append(button);}}
+function chooseVoice(){if(!("speechSynthesis" in window))return;const voices=speechSynthesis.getVoices().filter(v=>/^en[-_]/i.test(v.lang));voice=voices.find(v=>/Samantha|Karen|Daniel|Serena|Ava/i.test(v.name))||voices.find(v=>v.localService)||voices[0]||null;}
+function speak(word,button){if(!("speechSynthesis" in window)){status.textContent="Speech is not supported in this browser.";return;}speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(word);utterance.lang="en-US";utterance.rate=.82;utterance.pitch=1.06;if(voice)utterance.voice=voice;button.classList.remove("speaking");void button.offsetWidth;button.classList.add("speaking");utterance.onend=()=>button.classList.remove("speaking");utterance.onerror=()=>{status.textContent="Please check that your phone is not muted and try again.";button.classList.remove("speaking");};status.textContent="";speechSynthesis.speak(utterance);}
+document.getElementById("next").addEventListener("click",()=>{if("speechSynthesis" in window)speechSynthesis.cancel();draw();});
+if("speechSynthesis" in window){chooseVoice();speechSynthesis.addEventListener?.("voiceschanged",chooseVoice);}
+draw();
+</script></body></html>
